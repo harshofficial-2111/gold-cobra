@@ -1374,8 +1374,8 @@ export default function BomTable({
                 <div
                   className="
                     gc-table-scroll
-                    max-h-[360px]
-                    sm:max-h-[400px]
+                    overflow-x-auto
+                    pb-2
                   "
                 >
                   <table
@@ -1508,7 +1508,7 @@ export default function BomTable({
                                   log.id ||
                                   index
                                 }
-                                className="hover:bg-gray-50"
+                                className="align-top hover:bg-gray-50"
                               >
                                 <td className="p-3 text-center font-medium text-gray-500">
                                   {index + 1}
@@ -1536,10 +1536,17 @@ export default function BomTable({
                                   {count}
                                 </td>
 
-                                {/* NUMBER PLATE MATRIX (2 per row, full text) */}
-                                <td className="min-w-[220px] p-3 text-gray-700">
+                                {/* NUMBER PLATE MATRIX (2 per row, full text, capped height) */}
+                                <td className="min-w-[220px] p-3 align-top text-gray-700">
                                   {plates.length > 0 ? (
-                                    <div className="grid grid-cols-2 gap-1.5">
+                                    <div
+                                      className="
+                                        grid grid-cols-2 gap-1.5
+                                        max-h-[92px]
+                                        overflow-y-auto
+                                        pr-1
+                                      "
+                                    >
                                       {plates.map(
                                         (plate, pIdx) => (
                                           <span
@@ -1565,6 +1572,12 @@ export default function BomTable({
                                     </div>
                                   ) : (
                                     "-"
+                                  )}
+
+                                  {plates.length > 4 && (
+                                    <p className="mt-1 text-[10px] text-gray-400">
+                                      {plates.length} plates — scroll to see all
+                                    </p>
                                   )}
                                 </td>
 
