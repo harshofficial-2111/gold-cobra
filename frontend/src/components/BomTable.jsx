@@ -34,13 +34,50 @@ const FIELDS = [
   },
 ];
 
-const MAX_PLATE_LENGTH = 500;
+const MAX_PLATE_LENGTH = 5000;
 
 function normaliseNumberPlates(value) {
-  return value
-    .split(/[\n,]/)
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((plate) => normaliseNumberPlates(plate))
+      .filter(Boolean);
+  }
+
+  const raw = String(value ?? "").trim();
+
+  if (!raw) return [];
+
+  if (raw.startsWith("[") && raw.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return normaliseNumberPlates(parsed);
+      }
+    } catch {
+      // Continue with normal text parsing.
+    }
+  }
+
+  return raw
+    .split(/[\n,;|]+/)
     .map((plate) => plate.trim().toUpperCase())
     .filter(Boolean);
+}
+
+function getLogNumberPlates(log) {
+  const values = [
+    log?.numberPlate,
+    log?.number_plate,
+    log?.number_plates,
+    log?.numberPlateList,
+    log?.number_plate_list,
+    log?.plates,
+    log?.plateNumbers,
+  ];
+
+  return values
+    .filter((value) => value !== undefined && value !== null && value !== "")
+    .flatMap((value) => normaliseNumberPlates(value));
 }
 
 export default function BomTable({
@@ -233,7 +270,9 @@ export default function BomTable({
           : selectedItem.unit_rate || 0,
 
         numberPlate:
-          numberPlates.join(", ") || null,
+          numberPlates.length > 0
+            ? numberPlates.join(", ")
+            : null,
       };
 
       const res = await bomApi.addLog(
@@ -1147,71 +1186,58 @@ export default function BomTable({
                     </div>
 
                     {/* NUMBER PLATES */}
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600">
-                        Number Plates
-                      </label>
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="block text-xs font-semibold text-gray-600">
+                          Number Plates
+                        </label>
+
+                        <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
+                          {normaliseNumberPlates(formData.numberPlate).length}{" "}
+                          {normaliseNumberPlates(formData.numberPlate).length === 1
+                            ? "plate"
+                            : "plates"}
+                        </span>
+                      </div>
 
                       <textarea
-                        rows={2}
-                        maxLength={
-                          MAX_PLATE_LENGTH
-                        }
-                        placeholder="GJ-05-AB-1234, GJ-11-EA-5351"
-                        value={
-                          formData.numberPlate
-                        }
+                        rows={3}
+                        maxLength={MAX_PLATE_LENGTH}
+                        placeholder={`GJ-05-AB-1234
+GJ-11-EA-5351`}
+                        value={formData.numberPlate}
                         onChange={(e) => {
-                          const numberPlate =
-                            e.target.value;
-
+                          const numberPlate = e.target.value;
                           const numberPlates =
-                            normaliseNumberPlates(
-                              numberPlate
-                            );
+                            normaliseNumberPlates(numberPlate);
 
-                          setFormData(
-                            (prev) => ({
-                              ...prev,
-                              numberPlate,
-                              count:
-                                numberPlates.length
-                                  ? String(
-                                      numberPlates.length
-                                    )
-                                  : prev.count,
-                            })
-                          );
+                          setFormData((prev) => ({
+                            ...prev,
+                            numberPlate,
+                            count: numberPlates.length
+                              ? String(numberPlates.length)
+                              : prev.count,
+                          }));
                         }}
                         className="
-                          mt-1.5
-                          block
-                          min-h-11
-                          w-full min-w-0
-                          resize-y
-                          rounded-lg
-                          border
-                          border-gray-300
-                          bg-white
-                          px-3 py-2
-                          text-base
-                          outline-none
+                          mt-1.5 block min-h-[76px] w-full min-w-0
+                          resize-y rounded-lg border border-gray-300
+                          bg-white px-3 py-2 text-base uppercase
+                          outline-none placeholder:normal-case
                           focus:border-blue-500
-                          focus:ring-2
-                          focus:ring-blue-100
+                          focus:ring-2 focus:ring-blue-100
                         "
                       />
 
-                      <p
-                        className="
-                          mt-1
-                          text-[11px]
-                          text-gray-500
-                        "
-                      >
-                        Separate plates with
-                        commas or new lines.
-                      </p>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-gray-500">
+                          One plate per line or separate with commas.
+                        </p>
+
+                        <span className="shrink-0 text-[11px] text-gray-400">
+                          {formData.numberPlate.length}/{MAX_PLATE_LENGTH}
+                        </span>
+                      </div>
                     </div>
 
                     {/* QUANTITY */}
@@ -1496,43 +1522,42 @@ export default function BomTable({
                                 }
                                 className="hover:bg-gray-50"
                               >
-                                <td className="p-3 text-center font-medium text-gray-500">
-                                  {index + 1}
-                                </td>
+                                <td className="min-w-[320px] p-3 align-top">
+                                  {(() => {
+                                    const plates = getLogNumberPlates(log);
 
-                                <td className="whitespace-nowrap p-3 text-gray-800">
-                                  {log.date
-                                    ? new Date(
-                                        log.date
-                                      )
-                                        .toISOString()
-                                        .split(
-                                          "T"
-                                        )[0]
-                                    : "—"}
-                                </td>
+                                    if (plates.length === 0) {
+                                      return (
+                                        <span className="text-sm text-gray-400">
+                                          No plates
+                                        </span>
+                                      );
+                                    }
 
-                                <td className="max-w-[180px] truncate p-3 font-medium text-gray-700">
-                                  {
-                                    selectedItem.item
-                                  }
-                                </td>
+                                    return (
+                                      <div className="min-w-0">
+                                        <div className="mb-2 flex items-center gap-2">
+                                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">
+                                            {plates.length}
+                                          </span>
+                                          <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                            Number Plates
+                                          </span>
+                                        </div>
 
-                                <td className="p-3 text-center font-semibold">
-                                  {count}
-                                </td>
-
-                                <td
-                                  className="
-                                    max-w-[220px]
-                                    whitespace-normal
-                                    break-words
-                                    p-3
-                                    text-gray-700
-                                  "
-                                >
-                                  {log.numberPlate ||
-                                    "-"}
+                                        <div className="flex max-w-[700px] flex-wrap gap-1.5">
+                                          {plates.map((plate, plateIndex) => (
+                                            <span
+                                              key={`${plate}-${plateIndex}`}
+                                              className="inline-flex min-h-8 items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 font-mono text-xs font-bold tracking-wide text-blue-700 whitespace-nowrap"
+                                            >
+                                              {plate}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </td>
 
                                 <td className="whitespace-nowrap p-3 text-center font-semibold">
