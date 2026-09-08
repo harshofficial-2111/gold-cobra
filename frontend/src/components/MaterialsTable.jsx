@@ -11,8 +11,12 @@ const FIELDS = [
   { name: "totalSum", label: "Total Sum", type: "number" },
 ];
 
-export default function MaterialsTable({ data = [], road, onChanged, canEdit = true }) {
-
+export default function MaterialsTable({
+  data = [],
+  road,
+  onChanged,
+  canEdit = true,
+}) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -55,20 +59,27 @@ export default function MaterialsTable({ data = [], road, onChanged, canEdit = t
       onChanged && onChanged();
     } catch (err) {
       console.error("Delete Material Error:", err);
-      window.alert(err?.response?.data?.message || "Failed to delete material.");
+      window.alert(
+        err?.response?.data?.message || "Failed to delete material."
+      );
     } finally {
       setDeletingId(null);
     }
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+    <section className="w-full min-w-0 overflow-hidden rounded-xl bg-white p-3 shadow-md sm:p-4 md:p-6">
+      {/* Header */}
+      <div className="mb-4 flex min-w-0 items-center justify-between gap-3 sm:mb-6">
+        <div className="flex min-w-0 items-center gap-2">
+          <Package
+            className="shrink-0 text-blue-600"
+            size={20}
+            aria-hidden="true"
+          />
 
-      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
-        <div className="flex items-center gap-2">
-          <Package className="text-blue-600 shrink-0" size={20} />
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">
-            TM 
+          <h2 className="truncate text-lg font-bold text-gray-800 sm:text-xl">
+            TM
           </h2>
         </div>
 
@@ -77,98 +88,176 @@ export default function MaterialsTable({ data = [], road, onChanged, canEdit = t
             type="button"
             onClick={openAdd}
             disabled={!road}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-3 py-2 rounded-lg shrink-0"
+            className="
+              inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5
+              rounded-lg bg-blue-600 px-3 text-sm font-medium text-white
+              transition hover:bg-blue-700
+              disabled:cursor-not-allowed disabled:opacity-50
+              sm:px-4
+            "
           >
-            <Plus size={16} />
+            <Plus size={17} aria-hidden="true" />
             <span className="hidden sm:inline">Add Material</span>
+            <span className="sm:hidden">Add</span>
           </button>
         )}
       </div>
 
+      {/* Empty state */}
       {data.length === 0 ? (
-        <div className="py-10 text-center text-gray-500">
+        <div className="flex min-h-[180px] items-center justify-center px-3 py-10 text-center text-sm text-gray-500 sm:text-base">
           No material records found.
         </div>
       ) : (
         <>
-
-          {/* Card list — phones only */}
-          <div className="md:hidden space-y-3">
+          {/* =========================================================
+              MOBILE CARDS
+              ========================================================= */}
+          <div className="space-y-3 md:hidden">
             {data.map((item) => (
-              <div key={item.id} className="gc-mobile-card">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-gray-700 truncate">
+              <article
+                key={item.id}
+                className="gc-mobile-card w-full min-w-0"
+              >
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate font-semibold text-gray-800"
+                      title={`${item.mix_type} ${item.item_type}`}
+                    >
                       {item.mix_type} {item.item_type}
                     </p>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      {item.item_type}
+                    </p>
                   </div>
-                  <span className="font-mono text-sm text-gray-700 shrink-0">
-                    {item.value}
-                  </span>
+
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-gray-500">Quantity</p>
+                    <p className="mt-0.5 font-mono text-sm font-semibold text-gray-700">
+                      {item.value ?? "—"}
+                    </p>
+                  </div>
                 </div>
 
                 {canEdit && (
-                  <div className="flex justify-end gap-3 mt-3 border-t pt-3">
+                  <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-gray-200 pt-3">
                     <button
                       type="button"
                       onClick={() => openEdit(item)}
-                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm font-medium"
+                      className="
+                        inline-flex min-h-11 items-center justify-center gap-1.5
+                        rounded-lg px-3 text-sm font-medium text-blue-600
+                        hover:bg-blue-50 hover:text-blue-800
+                      "
                     >
-                      <Pencil size={14} /> Edit
+                      <Pencil size={15} aria-hidden="true" />
+                      Edit
                     </button>
+
                     <button
                       type="button"
                       onClick={() => handleDelete(item.id)}
                       disabled={deletingId === item.id}
-                      className="text-red-600 hover:text-red-800 flex items-center gap-1 text-sm font-medium disabled:opacity-50"
+                      className="
+                        inline-flex min-h-11 items-center justify-center gap-1.5
+                        rounded-lg px-3 text-sm font-medium text-red-600
+                        hover:bg-red-50 hover:text-red-800
+                        disabled:cursor-not-allowed disabled:opacity-50
+                      "
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={15} aria-hidden="true" />
                       {deletingId === item.id ? "Deleting..." : "Delete"}
                     </button>
                   </div>
                 )}
-              </div>
+              </article>
             ))}
           </div>
 
-          {/* Full table — tablet and up */}
-          <div className="hidden md:block gc-table-scroll">
-            <table className="min-w-[560px] w-full border border-gray-200 rounded-lg">
+          {/* =========================================================
+              TABLET / DESKTOP TABLE
+              ========================================================= */}
+          <div className="hidden w-full min-w-0 md:block gc-table-scroll">
+            <table className="w-full min-w-[620px] border border-gray-200 text-sm lg:text-base">
               <thead className="bg-blue-600 text-white">
                 <tr>
-                  <th className="px-4 py-3 text-left">Mix Type</th>
-                  <th className="px-4 py-3 text-left">Item Type</th>
-                  <th className="px-4 py-3 text-center">Quantity</th>
-                  {canEdit && <th className="px-4 py-3 text-center">Actions</th>}
+                  <th className="whitespace-nowrap px-3 py-3 text-left font-semibold sm:px-4">
+                    Mix Type
+                  </th>
+
+                  <th className="whitespace-nowrap px-3 py-3 text-left font-semibold sm:px-4">
+                    Item Type
+                  </th>
+
+                  <th className="whitespace-nowrap px-3 py-3 text-center font-semibold sm:px-4">
+                    Quantity
+                  </th>
+
+                  {canEdit && (
+                    <th className="whitespace-nowrap px-3 py-3 text-center font-semibold sm:px-4">
+                      Actions
+                    </th>
+                  )}
                 </tr>
               </thead>
+
               <tbody>
                 {data.map((item) => (
-                  <tr key={item.id} className="border-b hover:bg-gray-50 transition">
-                    <td className="px-4 py-4 font-medium text-gray-700">
+                  <tr
+                    key={item.id}
+                    className="border-b border-gray-200 transition hover:bg-gray-50"
+                  >
+                    <td
+                      className="max-w-[220px] truncate px-3 py-4 font-medium text-gray-700 sm:px-4"
+                      title={item.mix_type}
+                    >
                       {item.mix_type}
                     </td>
-                    <td className="px-4 py-4">{item.item_type}</td>
-                    <td className="px-4 py-4 text-center">{item.value}</td>
+
+                    <td
+                      className="max-w-[260px] truncate px-3 py-4 sm:px-4"
+                      title={item.item_type}
+                    >
+                      {item.item_type}
+                    </td>
+
+                    <td className="px-3 py-4 text-center font-mono sm:px-4">
+                      {item.value ?? "—"}
+                    </td>
+
                     {canEdit && (
-                      <td className="px-4 py-4">
-                        <div className="flex items-center justify-center gap-3">
+                      <td className="px-3 py-4 sm:px-4">
+                        <div className="flex items-center justify-center gap-2">
                           <button
                             type="button"
                             onClick={() => openEdit(item)}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="
+                              inline-flex min-h-11 min-w-11 items-center
+                              justify-center rounded-lg text-blue-600
+                              hover:bg-blue-50 hover:text-blue-800
+                            "
                             title="Edit"
+                            aria-label="Edit material"
                           >
-                            <Pencil size={16} />
+                            <Pencil size={17} aria-hidden="true" />
                           </button>
+
                           <button
                             type="button"
                             onClick={() => handleDelete(item.id)}
                             disabled={deletingId === item.id}
-                            className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                            className="
+                              inline-flex min-h-11 min-w-11 items-center
+                              justify-center rounded-lg text-red-600
+                              hover:bg-red-50 hover:text-red-800
+                              disabled:cursor-not-allowed disabled:opacity-50
+                            "
                             title="Delete"
+                            aria-label="Delete material"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={17} aria-hidden="true" />
                           </button>
                         </div>
                       </td>
@@ -181,6 +270,7 @@ export default function MaterialsTable({ data = [], road, onChanged, canEdit = t
         </>
       )}
 
+      {/* Modal */}
       {canEdit && modalOpen && (
         <CrudModal
           title={editingItem ? "Edit Material" : "Add Material"}
@@ -191,6 +281,7 @@ export default function MaterialsTable({ data = [], road, onChanged, canEdit = t
                   mixType: editingItem.mix_type,
                   itemType: editingItem.item_type,
                   quantity: editingItem.value,
+                  totalSum: editingItem.total_sum ?? "",
                 }
               : {}
           }
@@ -202,7 +293,6 @@ export default function MaterialsTable({ data = [], road, onChanged, canEdit = t
           submitLabel={editingItem ? "Update" : "Add"}
         />
       )}
-
-    </div>
+    </section>
   );
 }

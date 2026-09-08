@@ -13,8 +13,7 @@ import { authApi } from "./api/client";
 
 const API = "https://gold-cobra.onrender.com/api";
 
-// Only this role gets Add/Edit/Delete controls. Everyone else (client,
-// viewer, or any other role your DB uses) gets a read-only dashboard.
+// Only admin gets Add/Edit/Delete controls.
 const ADMIN_ROLE = "admin";
 
 export default function App() {
@@ -36,12 +35,17 @@ export default function App() {
 
   const [loading, setLoading] = useState(false);
 
-  // ==========================
-  // Check Login
-  // ==========================
+  // ============================================================
+  // CHECK LOGIN
+  // ============================================================
   useEffect(() => {
-    const token = localStorage.getItem("gold_cobra_token");
-    const storedRole = localStorage.getItem("gold_cobra_role");
+    const token = localStorage.getItem(
+      "gold_cobra_token"
+    );
+
+    const storedRole = localStorage.getItem(
+      "gold_cobra_role"
+    );
 
     if (token) {
       setIsLoggedIn(true);
@@ -49,9 +53,9 @@ export default function App() {
     }
   }, []);
 
-  // ==========================
-  // Load Dashboard
-  // ==========================
+  // ============================================================
+  // LOAD DASHBOARD WHEN ROAD CHANGES
+  // ============================================================
   useEffect(() => {
     if (isLoggedIn && selectedRoad) {
       loadDashboard();
@@ -63,64 +67,123 @@ export default function App() {
       setLoading(true);
 
       const res = await fetch(
-        `${API}/dashboard?road=${encodeURIComponent(selectedRoad)}`
+        `${API}/dashboard?road=${encodeURIComponent(
+          selectedRoad
+        )}`
       );
+
+      if (!res.ok) {
+        throw new Error(
+          `Dashboard request failed: ${res.status}`
+        );
+      }
 
       const data = await res.json();
 
-      setMilestoneData(data.milestones || []);
-      setBomData(data.bom || []);
-      setMixOverviewData(data.mixOverview || []);
-      setRoadImageUrl(data.road?.image_url || "");
+      setMilestoneData(
+        Array.isArray(data.milestones)
+          ? data.milestones
+          : []
+      );
+
+      setBomData(
+        Array.isArray(data.bom)
+          ? data.bom
+          : []
+      );
+
+      setMixOverviewData(
+        Array.isArray(data.mixOverview)
+          ? data.mixOverview
+          : []
+      );
+
+      setRoadImageUrl(
+        data.road?.image_url || ""
+      );
     } catch (err) {
-      console.error("Dashboard Error:", err);
+      console.error(
+        "Dashboard Error:",
+        err
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  // ==========================
-  // Login
-  // ==========================
+  // ============================================================
+  // LOGIN
+  // ============================================================
   async function login(e) {
     e.preventDefault();
 
-    if (!username || !password) return;
+    if (!username || !password) {
+      return;
+    }
 
     setLoginError("");
 
     try {
       setLoggingIn(true);
 
-      const res = await authApi.login({ username, password });
+      const res = await authApi.login({
+        username,
+        password,
+      });
+
       const { token, user } = res.data;
 
-      localStorage.setItem("gold_cobra_token", token);
-      localStorage.setItem("gold_cobra_role", user?.role || "");
+      localStorage.setItem(
+        "gold_cobra_token",
+        token
+      );
+
+      localStorage.setItem(
+        "gold_cobra_role",
+        user?.role || ""
+      );
 
       setRole(user?.role || "");
       setIsLoggedIn(true);
     } catch (err) {
       setLoginError(
-        err?.response?.data?.message || "Login failed. Check your credentials."
+        err?.response?.data?.message ||
+          "Login failed. Check your credentials."
       );
     } finally {
       setLoggingIn(false);
     }
   }
 
-  // ==========================
-  // Logout
-  // ==========================
+  // ============================================================
+  // LOGOUT
+  // ============================================================
   function logout() {
-    localStorage.removeItem("gold_cobra_token");
-    localStorage.removeItem("gold_cobra_role");
+    localStorage.removeItem(
+      "gold_cobra_token"
+    );
+
+    localStorage.removeItem(
+      "gold_cobra_role"
+    );
+
     setIsLoggedIn(false);
     setRole(null);
+
+    setSelectedWard("");
+    setSelectedRoad("");
+
+    setMilestoneData([]);
+    setBomData([]);
+    setMixOverviewData([]);
+    setRoadImageUrl("");
   }
 
   const canEdit = role === ADMIN_ROLE;
 
+  // ============================================================
+  // LOGIN SCREEN
+  // ============================================================
   if (!isLoggedIn) {
     return (
       <Login
@@ -135,9 +198,18 @@ export default function App() {
     );
   }
 
+  // ============================================================
+  // DASHBOARD
+  // ============================================================
   return (
-    <div className="min-h-[100dvh] bg-gray-100">
-
+    <div
+      className="
+        min-h-[100dvh]
+        w-full min-w-0
+        overflow-x-hidden
+        bg-gray-100
+      "
+    >
       <Navbar
         selectedWard={selectedWard}
         setSelectedWard={setSelectedWard}
@@ -147,22 +219,69 @@ export default function App() {
         canEdit={canEdit}
       />
 
-      <main className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
-
+      <main
+        className="
+          mx-auto w-full min-w-0 max-w-7xl
+          space-y-4
+          px-3 py-4
+          sm:space-y-6
+          sm:px-4 sm:py-5
+          md:px-6 md:py-6
+        "
+      >
+        {/* ======================================================
+            LOADING
+            ====================================================== */}
         {loading && (
-          <div className="bg-white rounded-lg shadow p-4 text-blue-600 font-semibold">
+          <div
+            className="
+              w-full min-w-0
+              rounded-xl bg-white
+              px-4 py-3
+              text-sm font-semibold
+              text-blue-600
+              shadow-sm
+              sm:px-5 sm:py-4
+            "
+          >
             Loading Dashboard...
           </div>
         )}
 
+        {/* ======================================================
+            READ ONLY NOTICE
+            ====================================================== */}
         {!canEdit && (
-          <div className="bg-blue-50 border border-blue-100 text-blue-700 rounded-lg px-4 py-2 text-sm font-medium">
-            Viewing in read-only mode. Contact an admin for edit access.
+          <div
+            className="
+              w-full min-w-0
+              rounded-xl
+              border border-blue-100
+              bg-blue-50
+              px-3 py-2.5
+              text-xs font-medium
+              leading-5 text-blue-700
+              sm:px-4 sm:py-3
+              sm:text-sm
+            "
+          >
+            Viewing in read-only mode.
+            Contact an admin for edit access.
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-
+        {/* ======================================================
+            MAP + SUMMARY
+            ====================================================== */}
+        <section
+          className="
+            grid w-full min-w-0
+            grid-cols-1
+            gap-4
+            lg:grid-cols-3
+            lg:gap-6
+          "
+        >
           <MapPanel
             selectedWard={selectedWard}
             selectedRoad={selectedRoad}
@@ -178,11 +297,20 @@ export default function App() {
             bom={bomData}
             materials={mixOverviewData}
           />
+        </section>
 
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-
+        {/* ======================================================
+            MILESTONES
+            ====================================================== */}
+        <section
+          className="
+            grid w-full min-w-0
+            grid-cols-1
+            gap-4
+            lg:grid-cols-2
+            lg:gap-6
+          "
+        >
           <MilestoneCircleChart
             data={milestoneData}
           />
@@ -193,10 +321,20 @@ export default function App() {
             onChanged={loadDashboard}
             canEdit={canEdit}
           />
+        </section>
 
-        </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-
+        {/* ======================================================
+            MATERIALS
+            ====================================================== */}
+        <section
+          className="
+            grid w-full min-w-0
+            grid-cols-1
+            gap-4
+            lg:grid-cols-2
+            lg:gap-6
+          "
+        >
           <ResourcePieChart
             data={mixOverviewData}
           />
@@ -207,19 +345,18 @@ export default function App() {
             onChanged={loadDashboard}
             canEdit={canEdit}
           />
+        </section>
 
-        </div>
-
-
+        {/* ======================================================
+            BILL OF MATERIALS
+            ====================================================== */}
         <BomTable
           data={bomData}
           road={selectedRoad}
           onChanged={loadDashboard}
           canEdit={canEdit}
         />
-
       </main>
-
     </div>
   );
 }

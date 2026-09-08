@@ -68,12 +68,13 @@ export default function Navbar({
     try {
       const res = await axios.get(`${API}/wards`);
 
-      setWards(res.data.wards || []);
+      const wardList = res.data.wards || [];
+      setWards(wardList);
 
       if (preferWard) {
         setSelectedWard(String(preferWard));
-      } else if (res.data.wards?.length > 0) {
-        setSelectedWard(String(res.data.wards[0].ward_number));
+      } else if (wardList.length > 0) {
+        setSelectedWard(String(wardList[0].ward_number));
       }
     } catch (err) {
       console.error("Load Wards Error:", err);
@@ -84,15 +85,20 @@ export default function Navbar({
     try {
       const res = await axios.get(`${API}/roads/ward/${ward}`);
 
-      setRoads(res.data.roads || []);
+      const roadList = res.data.roads || [];
+      setRoads(roadList);
 
       if (preferRoad) {
         setSelectedRoad(preferRoad);
-      } else if (res.data.roads?.length > 0) {
-        setSelectedRoad(res.data.roads[0].road_name);
+      } else if (roadList.length > 0) {
+        setSelectedRoad(roadList[0].road_name);
+      } else {
+        setSelectedRoad("");
       }
     } catch (err) {
       console.error("Load Roads Error:", err);
+      setRoads([]);
+      setSelectedRoad("");
     }
   };
 
@@ -150,141 +156,264 @@ export default function Navbar({
     }
   }
 
-  const wardControls = (mobile) => (
-    <>
-      <select
-        value={selectedWard}
-        onChange={(e) => setSelectedWard(e.target.value)}
-        className={`h-10 border border-gray-300 rounded-lg px-4 bg-white ${
-          mobile ? "w-full" : ""
-        }`}
-      >
-        {wards.map((ward) => (
-          <option key={ward.id} value={ward.ward_number}>
-            Ward {ward.ward_number}
-          </option>
-        ))}
-      </select>
+  const selectClass =
+    "h-11 min-w-0 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 sm:px-4";
 
-      {canEdit && (
-        <button
-          type="button"
-          onClick={() => setWardModalOpen(true)}
-          className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg text-blue-600 hover:bg-blue-50"
-        >
-          <Plus size={18} />
-        </button>
-      )}
-    </>
-  );
-
-  const roadControls = (mobile) => (
-    <>
-      <select
-        value={selectedRoad}
-        onChange={(e) => setSelectedRoad(e.target.value)}
-        className={`h-10 border border-gray-300 rounded-lg px-4 bg-white ${
-          mobile ? "w-full" : ""
-        }`}
-      >
-        {roads.map((road) => (
-          <option key={road.id} value={road.road_name}>
-            {road.road_name}
-          </option>
-        ))}
-      </select>
-
-      {canEdit && (
-        <>
-          <button
-            type="button"
-            onClick={() => setRoadModalOpen(true)}
-            className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg text-blue-600 hover:bg-blue-50"
-          >
-            <Plus size={18} />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDeleteRoad}
-            disabled={!selectedRoad}
-            className="w-10 h-10 flex items-center justify-center border border-gray-300 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-40"
-          >
-            <Trash2 size={18} />
-          </button>
-        </>
-      )}
-    </>
-  );
+  const iconButtonClass =
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white transition active:scale-95";
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white shadow-md px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
+      <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
 
-          {/* Logo Container */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center">
-  <img
-    src="/logo.png"
-    alt="Gold Cobra"
-    className="h-16 w-auto object-contain"
-  />
-</div>
-          </div>
+        <div className="mx-auto w-full max-w-7xl px-3 py-3 sm:px-4 sm:py-4 lg:px-6">
 
-          {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center gap-3">
+          {/* =========================
+              TOP BAR
+          ========================= */}
+          <div className="flex min-w-0 items-center justify-between gap-3">
 
-            {wardControls(false)}
+            {/* Logo */}
+            <div className="min-w-0 flex-1">
+              <img
+                src="/logo.png"
+                alt="Gold Cobra"
+                className="
+                  h-11
+                  w-auto
+                  max-w-[180px]
+                  object-contain
+                  object-left
+                  sm:h-14
+                  sm:max-w-[220px]
+                  lg:h-16
+                  lg:max-w-[250px]
+                "
+              />
+            </div>
 
-            {roadControls(false)}
+            {/* Desktop controls */}
+            <div className="hidden min-w-0 items-center gap-2 lg:flex">
 
+              {/* Ward */}
+              <div className="flex min-w-0 items-center gap-2">
+                <select
+                  value={selectedWard}
+                  onChange={(e) =>
+                    setSelectedWard(e.target.value)
+                  }
+                  className="h-11 max-w-[150px] rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                >
+                  {wards.map((ward) => (
+                    <option
+                      key={ward.id}
+                      value={ward.ward_number}
+                    >
+                      Ward {ward.ward_number}
+                    </option>
+                  ))}
+                </select>
+
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setWardModalOpen(true)}
+                    aria-label="Add ward"
+                    className={`${iconButtonClass} text-blue-600 hover:bg-blue-50`}
+                  >
+                    <Plus size={18} />
+                  </button>
+                )}
+              </div>
+
+              {/* Road */}
+              <div className="flex min-w-0 items-center gap-2">
+                <select
+                  value={selectedRoad}
+                  onChange={(e) =>
+                    setSelectedRoad(e.target.value)
+                  }
+                  className="h-11 max-w-[260px] rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                >
+                  {roads.map((road) => (
+                    <option
+                      key={road.id}
+                      value={road.road_name}
+                    >
+                      {road.road_name}
+                    </option>
+                  ))}
+                </select>
+
+                {canEdit && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setRoadModalOpen(true)}
+                      aria-label="Add road"
+                      className={`${iconButtonClass} text-blue-600 hover:bg-blue-50`}
+                    >
+                      <Plus size={18} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleDeleteRoad}
+                      disabled={!selectedRoad}
+                      aria-label="Delete road"
+                      className={`${iconButtonClass} text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40`}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Logout */}
+              <button
+                type="button"
+                onClick={onLogout}
+                aria-label="Logout"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition hover:bg-red-600 active:scale-95"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+
+            {/* Mobile menu button */}
             <button
-              onClick={onLogout}
-              className="w-10 h-10 rounded-lg bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition"
+              type="button"
+              aria-label={
+                isMenuOpen ? "Close menu" : "Open menu"
+              }
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((value) => !value)}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 transition hover:bg-gray-50 active:scale-95 lg:hidden"
             >
-              <LogOut size={18} />
+              {isMenuOpen ? (
+                <X size={22} />
+              ) : (
+                <Menu size={22} />
+              )}
             </button>
-
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden p-2 rounded-lg border"
-          >
-            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          {/* =========================
+              MOBILE MENU
+          ========================= */}
+          {isMenuOpen && (
+            <div className="mt-4 border-t border-gray-100 pt-4 lg:hidden">
 
+              <div className="space-y-3">
+
+                {/* Ward */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Ward
+                  </label>
+
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedWard}
+                      onChange={(e) =>
+                        setSelectedWard(e.target.value)
+                      }
+                      className={selectClass}
+                    >
+                      {wards.map((ward) => (
+                        <option
+                          key={ward.id}
+                          value={ward.ward_number}
+                        >
+                          Ward {ward.ward_number}
+                        </option>
+                      ))}
+                    </select>
+
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setWardModalOpen(true)
+                        }
+                        aria-label="Add ward"
+                        className={`${iconButtonClass} text-blue-600 hover:bg-blue-50`}
+                      >
+                        <Plus size={18} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Road */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Road
+                  </label>
+
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedRoad}
+                      onChange={(e) =>
+                        setSelectedRoad(e.target.value)
+                      }
+                      className={selectClass}
+                    >
+                      {roads.map((road) => (
+                        <option
+                          key={road.id}
+                          value={road.road_name}
+                        >
+                          {road.road_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {canEdit && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setRoadModalOpen(true)
+                          }
+                          aria-label="Add road"
+                          className={`${iconButtonClass} text-blue-600 hover:bg-blue-50`}
+                        >
+                          <Plus size={18} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDeleteRoad}
+                          disabled={!selectedRoad}
+                          aria-label="Delete road"
+                          className={`${iconButtonClass} text-red-600 hover:bg-red-50 disabled:opacity-40`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Logout */}
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-600 active:scale-[0.99]"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden mt-5 flex flex-col gap-3">
-
-            <div className="flex gap-2">
-              {wardControls(true)}
-            </div>
-
-            <div className="flex gap-2">
-              {roadControls(true)}
-            </div>
-
-            <button
-              onClick={onLogout}
-              className="bg-red-500 hover:bg-red-600 text-white rounded-lg py-3 flex items-center justify-center gap-2"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
-
-          </div>
-        )}
       </header>
 
-      {/* Ward Modal */}
+      {/* =========================
+          WARD MODAL
+      ========================= */}
       {canEdit && wardModalOpen && (
         <CrudModal
           title="Add Ward"
@@ -296,7 +425,9 @@ export default function Navbar({
         />
       )}
 
-      {/* Road Modal */}
+      {/* =========================
+          ROAD MODAL
+      ========================= */}
       {canEdit && roadModalOpen && (
         <CrudModal
           title={`Add Road (Ward ${selectedWard})`}

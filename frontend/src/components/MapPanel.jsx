@@ -4,8 +4,6 @@ import { MapPin, Pencil, Upload, X } from "lucide-react";
 
 import { roadApi } from "../api/client";
 
-// Keep uploaded images reasonably small since they're stored as base64
-// text directly in the database (no external file storage configured).
 const MAX_FILE_MB = 2;
 
 export default function MapPanel({
@@ -31,6 +29,7 @@ export default function MapPanel({
 
   function handleFilePicked(e) {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -39,15 +38,24 @@ export default function MapPanel({
     }
 
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      setError(`Image is too large — please pick one under ${MAX_FILE_MB}MB.`);
+      setError(
+        `Image is too large — please pick one under ${MAX_FILE_MB}MB.`
+      );
       return;
     }
 
     setError("");
 
     const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result);
-    reader.onerror = () => setError("Could not read that file.");
+
+    reader.onload = () => {
+      setPreview(reader.result);
+    };
+
+    reader.onerror = () => {
+      setError("Could not read that file.");
+    };
+
     reader.readAsDataURL(file);
   }
 
@@ -58,155 +66,445 @@ export default function MapPanel({
     }
 
     setError("");
+
     try {
       setSaving(true);
-      await roadApi.setImage({ road: selectedRoad, imageUrl: preview });
+
+      await roadApi.setImage({
+        road: selectedRoad,
+        imageUrl: preview,
+      });
+
       setEditing(false);
-      onChanged && onChanged();
+
+      if (onChanged) {
+        onChanged();
+      }
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to save image.");
+      setError(
+        err?.response?.data?.message ||
+          "Failed to save image."
+      );
     } finally {
       setSaving(false);
     }
   }
 
+  function closeFullscreen() {
+    setFullscreenOpen(false);
+  }
+
   return (
-    <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-4 sm:p-6 flex flex-col">
-
-      <div className="flex items-center justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <MapPin className="text-blue-600 shrink-0" size={20} />
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">
-            Location
-          </h2>
-        </div>
-
-        {canEdit && selectedRoad && !editing && (
-          <button
-            type="button"
-            onClick={openEditor}
-            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-medium"
-          >
-            <Pencil size={14} />
-            {imageUrl ? "Change Photo" : "Add Photo"}
-          </button>
-        )}
-      </div>
-
-      {editing ? (
-        <div className="flex-1 min-h-[220px] sm:min-h-[280px] rounded-lg bg-gray-50 border border-gray-200 flex flex-col items-center justify-center text-center px-4 gap-3">
-
-          {preview ? (
-            <img
-              src={preview}
-              alt="Preview"
-              className="max-h-40 rounded-lg object-cover"
+    <>
+      <section
+        className="
+          w-full
+          min-w-0
+          overflow-hidden
+          rounded-xl
+          bg-white
+          p-3
+          shadow-md
+          sm:p-4
+          md:p-6
+          lg:col-span-2
+        "
+      >
+        {/* =========================
+            HEADER
+        ========================= */}
+        <div className="mb-4 flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <MapPin
+              className="shrink-0 text-blue-600"
+              size={20}
             />
-          ) : (
-            <Upload className="text-gray-300" size={36} />
+
+            <h2 className="truncate text-lg font-bold text-gray-800 sm:text-xl">
+              Location
+            </h2>
+          </div>
+
+          {canEdit && selectedRoad && !editing && (
+            <button
+              type="button"
+              onClick={openEditor}
+              className="
+                flex
+                min-h-11
+                shrink-0
+                items-center
+                gap-1.5
+                rounded-lg
+                px-2
+                text-sm
+                font-medium
+                text-blue-600
+                transition
+                hover:bg-blue-50
+                hover:text-blue-800
+                sm:px-3
+              "
+            >
+              <Pencil size={15} />
+
+              <span className="hidden xs:inline sm:inline">
+                {imageUrl ? "Change Photo" : "Add Photo"}
+              </span>
+            </button>
           )}
+        </div>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFilePicked}
-            className="hidden"
-          />
+        {/* =========================
+            EDIT PHOTO
+        ========================= */}
+        {editing ? (
+          <div
+            className="
+              flex
+              min-h-[240px]
+              w-full
+              flex-col
+              items-center
+              justify-center
+              gap-4
+              overflow-hidden
+              rounded-xl
+              border
+              border-gray-200
+              bg-gray-50
+              px-3
+              py-5
+              text-center
+              sm:min-h-[300px]
+              sm:px-6
+            "
+          >
+            {preview ? (
+              <div className="w-full max-w-md overflow-hidden rounded-xl bg-gray-100">
+                <img
+                  src={preview}
+                  alt="Preview"
+                  className="
+                    mx-auto
+                    max-h-[180px]
+                    w-auto
+                    max-w-full
+                    object-contain
+                    sm:max-h-[220px]
+                  "
+                />
+              </div>
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                <Upload
+                  className="text-gray-300"
+                  size={32}
+                />
+              </div>
+            )}
 
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFilePicked}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              onClick={() =>
+                fileInputRef.current?.click()
+              }
+              className="
+                min-h-11
+                w-full
+                max-w-sm
+                rounded-lg
+                border
+                border-blue-600
+                px-4
+                py-2.5
+                text-sm
+                font-medium
+                text-blue-600
+                transition
+                hover:bg-blue-50
+                active:scale-[0.99]
+              "
+            >
+              Choose Photo From Device
+            </button>
+
+            {error && (
+              <p
+                role="alert"
+                className="
+                  w-full
+                  max-w-sm
+                  rounded-lg
+                  bg-red-50
+                  px-3
+                  py-2
+                  text-sm
+                  leading-5
+                  text-red-600
+                "
+              >
+                {error}
+              </p>
+            )}
+
+            <div className="flex w-full max-w-sm gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setError("");
+                }}
+                className="
+                  min-h-11
+                  flex-1
+                  rounded-lg
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-medium
+                  text-gray-600
+                  transition
+                  hover:bg-gray-100
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || !preview}
+                className="
+                  min-h-11
+                  flex-1
+                  rounded-lg
+                  bg-blue-600
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-medium
+                  text-white
+                  transition
+                  hover:bg-blue-700
+                  active:scale-[0.99]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-60
+                "
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : imageUrl ? (
+          /* =========================
+             IMAGE
+          ========================= */
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-medium"
+            onClick={() => setFullscreenOpen(true)}
+            className="
+              group
+              relative
+              block
+              h-[240px]
+              w-full
+              min-w-0
+              overflow-hidden
+              rounded-xl
+              bg-gray-100
+              text-left
+              cursor-zoom-in
+              sm:h-[300px]
+              md:h-[340px]
+              lg:h-[380px]
+            "
           >
-            Choose Photo From Device
-          </button>
+            <img
+              src={imageUrl}
+              alt={selectedRoad}
+              className="
+                h-full
+                w-full
+                object-cover
+                transition
+                duration-200
+                group-hover:opacity-90
+              "
+            />
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-              {error}
+            {/* Image information */}
+            <div
+              className="
+                absolute
+                inset-x-0
+                bottom-0
+                bg-gradient-to-t
+                from-black/70
+                to-transparent
+                px-3
+                pb-3
+                pt-8
+                text-white
+                sm:px-4
+              "
+            >
+              <p className="truncate text-sm font-semibold sm:text-base">
+                {selectedRoad}
+              </p>
+
+              <p className="text-xs text-gray-200 sm:text-sm">
+                Ward {selectedWard}
+              </p>
+            </div>
+          </button>
+        ) : (
+          /* =========================
+             NO IMAGE
+          ========================= */
+          <div
+            className="
+              flex
+              min-h-[240px]
+              w-full
+              flex-col
+              items-center
+              justify-center
+              overflow-hidden
+              rounded-xl
+              border
+              border-dashed
+              border-gray-300
+              bg-gray-100
+              px-4
+              py-6
+              text-center
+              sm:min-h-[300px]
+              md:min-h-[340px]
+            "
+          >
+            <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white">
+              <MapPin
+                className="text-gray-300"
+                size={32}
+              />
+            </div>
+
+            <p className="max-w-full truncate px-2 font-semibold text-gray-600">
+              {selectedRoad || "No road selected"}
             </p>
-          )}
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving || !preview}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </div>
-      ) : imageUrl ? (
-        <button
-          type="button"
-          onClick={() => setFullscreenOpen(true)}
-          className="flex-1 min-h-[220px] sm:min-h-[280px] rounded-lg overflow-hidden bg-gray-100 relative text-left cursor-zoom-in group"
-        >
-          <img
-            src={imageUrl}
-            alt={selectedRoad}
-            className="w-full h-full object-cover group-hover:opacity-90 transition"
-          />
-          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white px-3 py-2">
-            <p className="font-semibold">{selectedRoad}</p>
-            <p className="text-xs text-gray-200">Ward {selectedWard}</p>
-          </div>
-        </button>
-      ) : (
-        <div className="flex-1 min-h-[220px] sm:min-h-[280px] rounded-lg bg-gray-100 border border-dashed border-gray-300 flex flex-col items-center justify-center text-center px-4">
-          <MapPin className="text-gray-300 mb-2" size={40} />
-          <p className="font-semibold text-gray-600">
-            {selectedRoad || "No road selected"}
-          </p>
-          <p className="text-sm text-gray-400">
-            {selectedWard ? `Ward ${selectedWard}` : ""}
-          </p>
-          <p className="text-xs text-gray-400 mt-2 max-w-xs">
-            {canEdit
-              ? "No photo yet — click \"Add Photo\" above to upload one from your device."
-              : "No photo available for this road yet."}
-          </p>
-        </div>
-      )}
+            <p className="mt-1 text-sm text-gray-400">
+              {selectedWard
+                ? `Ward ${selectedWard}`
+                : ""}
+            </p>
 
-      {fullscreenOpen && imageUrl && createPortal(
-        <div
-          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setFullscreenOpen(false)}
-        >
-          <button
-            type="button"
-            onClick={() => setFullscreenOpen(false)}
-            className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 rounded-full p-2"
+            <p className="mt-2 max-w-sm text-xs leading-5 text-gray-400">
+              {canEdit
+                ? 'No photo yet — click "Add Photo" above to upload one from your device.'
+                : "No photo available for this road yet."}
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* =========================
+          FULLSCREEN IMAGE
+      ========================= */}
+      {fullscreenOpen &&
+        imageUrl &&
+        createPortal(
+          <div
+            className="
+              fixed
+              inset-0
+              z-[9999]
+              flex
+              min-h-[100dvh]
+              w-full
+              items-center
+              justify-center
+              overflow-hidden
+              bg-black/95
+              p-3
+              sm:p-6
+            "
+            onClick={closeFullscreen}
           >
-            <X size={24} />
-          </button>
+            {/* Close */}
+            <button
+              type="button"
+              onClick={closeFullscreen}
+              aria-label="Close image"
+              className="
+                absolute
+                right-3
+                top-3
+                z-10
+                flex
+                h-11
+                w-11
+                items-center
+                justify-center
+                rounded-full
+                bg-white/10
+                text-white
+                transition
+                hover:bg-white/20
+                active:scale-95
+                sm:right-5
+                sm:top-5
+              "
+            >
+              <X size={24} />
+            </button>
 
-          <img
-            src={imageUrl}
-            alt={selectedRoad}
-            className="max-w-full max-h-full object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
+            {/* Image */}
+            <img
+              src={imageUrl}
+              alt={selectedRoad}
+              className="
+                max-h-[calc(100dvh-110px)]
+                max-w-full
+                object-contain
+                rounded-lg
+                sm:max-h-[calc(100dvh-120px)]
+              "
+              onClick={(e) => e.stopPropagation()}
+            />
 
-          <div className="absolute bottom-6 left-0 right-0 text-center text-white">
-            <p className="font-semibold text-lg">{selectedRoad}</p>
-            <p className="text-sm text-gray-300">Ward {selectedWard}</p>
-          </div>
-        </div>,
-        document.body
-      )}
+            {/* Caption */}
+            <div
+              className="
+                absolute
+                inset-x-0
+                bottom-4
+                px-4
+                text-center
+                text-white
+                sm:bottom-6
+              "
+            >
+              <p className="truncate text-base font-semibold sm:text-lg">
+                {selectedRoad}
+              </p>
 
-    </div>
+              <p className="text-xs text-gray-300 sm:text-sm">
+                Ward {selectedWard}
+              </p>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
