@@ -7,10 +7,13 @@ const {
   getMilestoneById,
   addMilestone,
   updateMilestone,
-  deleteMilestone
+  deleteMilestone,
 } = require("../controllers/milestoneController");
 
-const { verifyToken, requireAdmin } = require("../middleware/authMiddleware");
+const {
+  verifyToken,
+  requireAdmin,
+} = require("../middleware/authMiddleware");
 
 // GET /api/milestones?road=M.%20G.%20Road
 router.get("/", getMilestones);
