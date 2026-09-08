@@ -34,65 +34,16 @@ const FIELDS = [
   },
 ];
 
-const MAX_PLATE_LENGTH = 5000;
+// ~15 chars per plate ("GJ-11-EA-5351, ") * 50 plates, with headroom.
+const MAX_PLATE_LENGTH = 1000;
+const MAX_PLATES = 50;
 
 function normaliseNumberPlates(value) {
-  if (Array.isArray(value)) {
-    return value
-      .flatMap((plate) => normaliseNumberPlates(plate))
-      .filter(Boolean);
-  }
-
-  const raw = String(value ?? "").trim();
-
-  if (!raw) return [];
-
-  if (raw.startsWith("[") && raw.endsWith("]")) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return normaliseNumberPlates(parsed);
-      }
-    } catch {
-      // Continue with normal text parsing.
-    }
-  }
-
-  return raw
-    .split(/[\n,;|]+/)
+  return value
+    .split(/[\n,]/)
     .map((plate) => plate.trim().toUpperCase())
-    .filter(Boolean);
-}
-
-function getInputNumberPlates(value) {
-  const raw = String(value ?? "");
-
-  if (!raw.trim()) return [];
-
-  // Keep blank positions when the dynamic plate inputs are used.
-  if (raw.includes("\n")) {
-    return raw
-      .split(/\r?\n/)
-      .map((plate) => plate.trim().toUpperCase());
-  }
-
-  return normaliseNumberPlates(raw);
-}
-
-function getLogNumberPlates(log) {
-  const values = [
-    log?.numberPlate,
-    log?.number_plate,
-    log?.number_plates,
-    log?.numberPlateList,
-    log?.number_plate_list,
-    log?.plates,
-    log?.plateNumbers,
-  ];
-
-  return values
-    .filter((value) => value !== undefined && value !== null && value !== "")
-    .flatMap((value) => normaliseNumberPlates(value));
+    .filter(Boolean)
+    .slice(0, MAX_PLATES);
 }
 
 export default function BomTable({
@@ -268,25 +219,15 @@ export default function BomTable({
       formData.numberPlate
     );
 
-    const requestedCount =
-      formData.count === ""
-        ? 1
-        : Math.max(1, Number(formData.count) || 1);
-
-    if (numberPlates.length !== requestedCount) {
-      window.alert(
-        `Please enter exactly ${requestedCount} number plate${
-          requestedCount === 1 ? "" : "s"
-        }. You entered ${numberPlates.length}.`
-      );
-      return;
-    }
-
     try {
       const payload = {
         date: formData.date,
 
-        count: requestedCount,
+        count:
+          numberPlates.length ||
+          (formData.count === ""
+            ? 1
+            : Number(formData.count)),
 
         qty: Number(formData.quantity),
 
@@ -295,9 +236,7 @@ export default function BomTable({
           : selectedItem.unit_rate || 0,
 
         numberPlate:
-          numberPlates.length > 0
-            ? numberPlates.join(", ")
-            : null,
+          numberPlates.join(", ") || null,
       };
 
       const res = await bomApi.addLog(
@@ -1211,86 +1150,71 @@ export default function BomTable({
                     </div>
 
                     {/* NUMBER PLATES */}
-                    <div className="sm:col-span-2 lg:col-span-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <label className="block text-xs font-semibold text-gray-600">
-                          Number Plates
-                        </label>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600">
+                        Number Plates
+                      </label>
 
-                        <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
-                          {normaliseNumberPlates(formData.numberPlate).length} / {
-                            Math.max(
-                              1,
-                              Number(formData.count) || 1
-                            )
-                          } plates
-                        </span>
-                      </div>
+                      <textarea
+                        rows={2}
+                        maxLength={
+                          MAX_PLATE_LENGTH
+                        }
+                        placeholder="GJ-05-AB-1234, GJ-11-EA-5351"
+                        value={
+                          formData.numberPlate
+                        }
+                        onChange={(e) => {
+                          const numberPlate =
+                            e.target.value;
 
-                      <div className="mt-1.5 max-h-[230px] space-y-2 overflow-y-auto pr-1">
-                        {Array.from({
-                          length: Math.max(
-                            1,
-                            Number(formData.count) || 1
-                          ),
-                        }).map((_, index) => {
-                          const plates = getInputNumberPlates(
-                            formData.numberPlate
+                          const numberPlates =
+                            normaliseNumberPlates(
+                              numberPlate
+                            );
+
+                          setFormData(
+                            (prev) => ({
+                              ...prev,
+                              numberPlate,
+                              count:
+                                numberPlates.length
+                                  ? String(
+                                      numberPlates.length
+                                    )
+                                  : prev.count,
+                            })
                           );
+                        }}
+                        className="
+                          mt-1.5
+                          block
+                          min-h-11
+                          w-full min-w-0
+                          resize-y
+                          rounded-lg
+                          border
+                          border-gray-300
+                          bg-white
+                          px-3 py-2
+                          text-base
+                          outline-none
+                          focus:border-blue-500
+                          focus:ring-2
+                          focus:ring-blue-100
+                        "
+                      />
 
-                          return (
-                            <div
-                              key={`plate-${index}`}
-                              className="flex items-center gap-2"
-                            >
-                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-xs font-bold text-blue-600">
-                                {index + 1}
-                              </span>
-
-                              <input
-                                type="text"
-                                maxLength={100}
-                                placeholder={`Number Plate ${index + 1}`}
-                                value={plates[index] || ""}
-                                onChange={(e) => {
-                                  const nextPlates = Array.from({
-                                    length: Math.max(
-                                      1,
-                                      Number(formData.count) || 1
-                                    ),
-                                  }).map((_, plateIndex) =>
-                                    plates[plateIndex] || ""
-                                  );
-
-                                  nextPlates[index] = e.target.value
-                                    .toUpperCase();
-
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    numberPlate: nextPlates.join("\n"),
-                                  }));
-                                }}
-                                className="
-                                  min-h-11 w-full min-w-0
-                                  rounded-lg border border-gray-300
-                                  bg-white px-3 text-base uppercase
-                                  outline-none
-                                  placeholder:normal-case
-                                  focus:border-blue-500
-                                  focus:ring-2 focus:ring-blue-100
-                                "
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <p className="mt-1.5 text-[11px] text-gray-500">
-                        {Math.max(1, Number(formData.count) || 1)} {
-                          Math.max(1, Number(formData.count) || 1) === 1
-                            ? "plate is"
-                            : "plates are"
-                        } required for {selectedItem.item}.
+                      <p
+                        className="
+                          mt-1
+                          text-[11px]
+                          text-gray-500
+                        "
+                      >
+                        Separate plates with
+                        commas or new lines.
+                        Up to {MAX_PLATES} plates.
                       </p>
                     </div>
 
@@ -1457,7 +1381,7 @@ export default function BomTable({
                   <table
                     className="
                       w-full
-                      min-w-[900px]
+                      min-w-[1000px]
                       border-collapse
                       text-sm
                     "
@@ -1490,7 +1414,7 @@ export default function BomTable({
                           No. of Units
                         </th>
 
-                        <th className="whitespace-nowrap p-3 text-left">
+                        <th className="whitespace-nowrap p-3 text-left min-w-[220px]">
                           Number Plate
                         </th>
 
@@ -1568,6 +1492,16 @@ export default function BomTable({
                                 ) *
                                 count;
 
+                            // Split the stored plate string into
+                            // individual plates for the 4-column
+                            // matrix display below.
+                            const plates = log.numberPlate
+                              ? log.numberPlate
+                                  .split(",")
+                                  .map((p) => p.trim())
+                                  .filter(Boolean)
+                              : [];
+
                             return (
                               <tr
                                 key={
@@ -1576,42 +1510,62 @@ export default function BomTable({
                                 }
                                 className="hover:bg-gray-50"
                               >
-                                <td className="min-w-[320px] p-3 align-top">
-                                  {(() => {
-                                    const plates = getLogNumberPlates(log);
+                                <td className="p-3 text-center font-medium text-gray-500">
+                                  {index + 1}
+                                </td>
 
-                                    if (plates.length === 0) {
-                                      return (
-                                        <span className="text-sm text-gray-400">
-                                          No plates
-                                        </span>
-                                      );
-                                    }
+                                <td className="whitespace-nowrap p-3 text-gray-800">
+                                  {log.date
+                                    ? new Date(
+                                        log.date
+                                      )
+                                        .toISOString()
+                                        .split(
+                                          "T"
+                                        )[0]
+                                    : "—"}
+                                </td>
 
-                                    return (
-                                      <div className="min-w-0">
-                                        <div className="mb-2 flex items-center gap-2">
-                                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">
-                                            {plates.length}
+                                <td className="max-w-[180px] truncate p-3 font-medium text-gray-700">
+                                  {
+                                    selectedItem.item
+                                  }
+                                </td>
+
+                                <td className="p-3 text-center font-semibold">
+                                  {count}
+                                </td>
+
+                                {/* NUMBER PLATE MATRIX (2 per row, full text) */}
+                                <td className="min-w-[220px] p-3 text-gray-700">
+                                  {plates.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                      {plates.map(
+                                        (plate, pIdx) => (
+                                          <span
+                                            key={pIdx}
+                                            className="
+                                              whitespace-nowrap
+                                              rounded-md
+                                              border
+                                              border-gray-200
+                                              bg-gray-100
+                                              px-2 py-1
+                                              text-center
+                                              text-[11px]
+                                              font-semibold
+                                              tracking-tight
+                                              text-gray-700
+                                            "
+                                          >
+                                            {plate}
                                           </span>
-                                          <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                                            Number Plates
-                                          </span>
-                                        </div>
-
-                                        <div className="flex max-w-[700px] flex-wrap gap-1.5">
-                                          {plates.map((plate, plateIndex) => (
-                                            <span
-                                              key={`${plate}-${plateIndex}`}
-                                              className="inline-flex min-h-8 items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 font-mono text-xs font-bold tracking-wide text-blue-700 whitespace-nowrap"
-                                            >
-                                              {plate}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
+                                        )
+                                      )}
+                                    </div>
+                                  ) : (
+                                    "-"
+                                  )}
                                 </td>
 
                                 <td className="whitespace-nowrap p-3 text-center font-semibold">

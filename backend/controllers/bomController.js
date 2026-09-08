@@ -317,7 +317,7 @@ exports.deleteBom = async (req, res) => {
 // ADD Detailed Log Entry for BOM Item
 // POST /api/bom/:id/logs
 // Now supports: count x quantity x unitRate, plus an optional
-// Number Plate (up to 50 characters) for equipment-type items.
+// Number Plate list (up to 50 plates) for equipment-type items.
 // ==============================================
 exports.addBomLog = async (req, res) => {
   try {
@@ -329,7 +329,23 @@ exports.addBomLog = async (req, res) => {
     }
 
     const unitCount = count == null || count === "" ? 1 : Number(count);
-    const plate = (numberPlate || "").toString().slice(0, 50) || null;
+
+    // Cap by PLATE COUNT (max 50 plates), not by character length —
+    // the previous `.slice(0, 50)` truncated the whole string at 50
+    // characters, which cut plate lists off mid-plate. bom_logs.number_plate
+    // is now TEXT, so there's no DB-side length limit to worry about.
+    const MAX_PLATES = 50;
+    let plate = null;
+    if (numberPlate) {
+      const plates = numberPlate
+        .toString()
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .slice(0, MAX_PLATES);
+
+      plate = plates.length ? plates.join(", ") : null;
+    }
 
     const logResult = await db.query(
       `
