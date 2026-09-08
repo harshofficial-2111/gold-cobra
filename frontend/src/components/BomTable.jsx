@@ -64,6 +64,21 @@ function normaliseNumberPlates(value) {
     .filter(Boolean);
 }
 
+function getInputNumberPlates(value) {
+  const raw = String(value ?? "");
+
+  if (!raw.trim()) return [];
+
+  // Keep blank positions when the dynamic plate inputs are used.
+  if (raw.includes("\n")) {
+    return raw
+      .split(/\r?\n/)
+      .map((plate) => plate.trim().toUpperCase());
+  }
+
+  return normaliseNumberPlates(raw);
+}
+
 function getLogNumberPlates(log) {
   const values = [
     log?.numberPlate,
@@ -253,15 +268,25 @@ export default function BomTable({
       formData.numberPlate
     );
 
+    const requestedCount =
+      formData.count === ""
+        ? 1
+        : Math.max(1, Number(formData.count) || 1);
+
+    if (numberPlates.length !== requestedCount) {
+      window.alert(
+        `Please enter exactly ${requestedCount} number plate${
+          requestedCount === 1 ? "" : "s"
+        }. You entered ${numberPlates.length}.`
+      );
+      return;
+    }
+
     try {
       const payload = {
         date: formData.date,
 
-        count:
-          numberPlates.length ||
-          (formData.count === ""
-            ? 1
-            : Number(formData.count)),
+        count: requestedCount,
 
         qty: Number(formData.quantity),
 
@@ -1193,51 +1218,80 @@ export default function BomTable({
                         </label>
 
                         <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
-                          {normaliseNumberPlates(formData.numberPlate).length}{" "}
-                          {normaliseNumberPlates(formData.numberPlate).length === 1
-                            ? "plate"
-                            : "plates"}
+                          {normaliseNumberPlates(formData.numberPlate).length} / {
+                            Math.max(
+                              1,
+                              Number(formData.count) || 1
+                            )
+                          } plates
                         </span>
                       </div>
 
-                      <textarea
-                        rows={3}
-                        maxLength={MAX_PLATE_LENGTH}
-                        placeholder={`GJ-05-AB-1234
-GJ-11-EA-5351`}
-                        value={formData.numberPlate}
-                        onChange={(e) => {
-                          const numberPlate = e.target.value;
-                          const numberPlates =
-                            normaliseNumberPlates(numberPlate);
+                      <div className="mt-1.5 max-h-[230px] space-y-2 overflow-y-auto pr-1">
+                        {Array.from({
+                          length: Math.max(
+                            1,
+                            Number(formData.count) || 1
+                          ),
+                        }).map((_, index) => {
+                          const plates = getInputNumberPlates(
+                            formData.numberPlate
+                          );
 
-                          setFormData((prev) => ({
-                            ...prev,
-                            numberPlate,
-                            count: numberPlates.length
-                              ? String(numberPlates.length)
-                              : prev.count,
-                          }));
-                        }}
-                        className="
-                          mt-1.5 block min-h-[76px] w-full min-w-0
-                          resize-y rounded-lg border border-gray-300
-                          bg-white px-3 py-2 text-base uppercase
-                          outline-none placeholder:normal-case
-                          focus:border-blue-500
-                          focus:ring-2 focus:ring-blue-100
-                        "
-                      />
+                          return (
+                            <div
+                              key={`plate-${index}`}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-xs font-bold text-blue-600">
+                                {index + 1}
+                              </span>
 
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <p className="text-[11px] text-gray-500">
-                          One plate per line or separate with commas.
-                        </p>
+                              <input
+                                type="text"
+                                maxLength={100}
+                                placeholder={`Number Plate ${index + 1}`}
+                                value={plates[index] || ""}
+                                onChange={(e) => {
+                                  const nextPlates = Array.from({
+                                    length: Math.max(
+                                      1,
+                                      Number(formData.count) || 1
+                                    ),
+                                  }).map((_, plateIndex) =>
+                                    plates[plateIndex] || ""
+                                  );
 
-                        <span className="shrink-0 text-[11px] text-gray-400">
-                          {formData.numberPlate.length}/{MAX_PLATE_LENGTH}
-                        </span>
+                                  nextPlates[index] = e.target.value
+                                    .toUpperCase();
+
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    numberPlate: nextPlates.join("\n"),
+                                  }));
+                                }}
+                                className="
+                                  min-h-11 w-full min-w-0
+                                  rounded-lg border border-gray-300
+                                  bg-white px-3 text-base uppercase
+                                  outline-none
+                                  placeholder:normal-case
+                                  focus:border-blue-500
+                                  focus:ring-2 focus:ring-blue-100
+                                "
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
+
+                      <p className="mt-1.5 text-[11px] text-gray-500">
+                        {Math.max(1, Number(formData.count) || 1)} {
+                          Math.max(1, Number(formData.count) || 1) === 1
+                            ? "plate is"
+                            : "plates are"
+                        } required for {selectedItem.item}.
+                      </p>
                     </div>
 
                     {/* QUANTITY */}
