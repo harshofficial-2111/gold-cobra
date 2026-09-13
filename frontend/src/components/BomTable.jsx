@@ -351,7 +351,6 @@ export default function BomTable({
     0
   );
 
-  // Fixed: no invalid mixing of ?? and ||.
   const totalLogCost = logs.reduce(
     (acc, curr) => {
       const fallbackCost =
@@ -561,10 +560,18 @@ export default function BomTable({
                         text-gray-800
                       "
                     >
-                      ₹
-                      {Number(
-                        item.total_cost || 0
-                      ).toLocaleString()}
+                      {Number(item.total_cost || 0) === 0 ? (
+                        <span className="text-gray-400">
+                          Rate not set
+                        </span>
+                      ) : (
+                        <>
+                          ₹
+                          {Number(
+                            item.total_cost || 0
+                          ).toLocaleString()}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -795,12 +802,24 @@ export default function BomTable({
                     </td>
 
                     <td className="whitespace-nowrap px-3 py-4 text-center sm:px-4">
-                      ₹
                       {Number(
                         item.unit_rate ||
                           item.unitRate ||
                           0
-                      ).toLocaleString()}
+                      ) === 0 ? (
+                        <span className="text-gray-400">
+                          Not set
+                        </span>
+                      ) : (
+                        <>
+                          ₹
+                          {Number(
+                            item.unit_rate ||
+                              item.unitRate ||
+                              0
+                          ).toLocaleString()}
+                        </>
+                      )}
                     </td>
 
                     <td
@@ -812,10 +831,18 @@ export default function BomTable({
                         sm:px-4
                       "
                     >
-                      ₹
-                      {Number(
-                        item.total_cost || 0
-                      ).toLocaleString()}
+                      {Number(item.total_cost || 0) === 0 ? (
+                        <span className="font-normal text-gray-400">
+                          Rate not set
+                        </span>
+                      ) : (
+                        <>
+                          ₹
+                          {Number(
+                            item.total_cost || 0
+                          ).toLocaleString()}
+                        </>
+                      )}
                     </td>
 
                     <td className="px-3 py-4 sm:px-4">
@@ -1360,285 +1387,405 @@ export default function BomTable({
                 </form>
               )}
 
-              {/* LOG TABLE */}
-              <div
-                className="
-                  mt-4
-                  w-full min-w-0
-                  overflow-hidden
-                  rounded-xl
-                  border border-gray-200
-                  sm:mt-6
-                "
-              >
-                <div
-                  className="
-                    gc-table-scroll
-                    overflow-x-auto
-                    pb-2
-                  "
-                >
-                  <table
-                    className="
-                      w-full
-                      min-w-[1000px]
-                      border-collapse
-                      text-sm
-                    "
-                  >
-                    <thead
-                      className="
-                        sticky top-0 z-10
-                        bg-gray-100
-                      "
-                    >
-                      <tr
-                        className="
-                          border-b
-                          border-gray-200
-                        "
-                      >
-                        <th className="whitespace-nowrap p-3 text-center">
-                          Sr No
-                        </th>
+              {/* LOG LIST */}
+              <div className="mt-4 sm:mt-6">
+                {loadingLogs ? (
+                  <div className="rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
+                    Loading logs...
+                  </div>
+                ) : logs.length === 0 ? (
+                  <div className="rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-400">
+                    No daily log records added yet.
+                  </div>
+                ) : (
+                  <>
+                    {/* MOBILE LOG CARDS */}
+                    <div className="space-y-3 md:hidden">
+                      {logs.map((log, index) => {
+                        const count = Number(
+                          log.count || 1
+                        );
 
-                        <th className="whitespace-nowrap p-3 text-left">
-                          Date
-                        </th>
+                        const cost =
+                          log.totalCost ??
+                          Number(log.qty || 0) *
+                            Number(
+                              log.unitRate || 0
+                            ) *
+                            count;
 
-                        <th className="whitespace-nowrap p-3 text-left">
-                          Item
-                        </th>
+                        const plates = log.numberPlate
+                          ? log.numberPlate
+                              .split(",")
+                              .map((p) => p.trim())
+                              .filter(Boolean)
+                          : [];
 
-                        <th className="whitespace-nowrap p-3 text-center">
-                          No. of Units
-                        </th>
-
-                        <th className="whitespace-nowrap p-3 text-left min-w-[220px]">
-                          Number Plate
-                        </th>
-
-                        <th className="whitespace-nowrap p-3 text-center">
-                          Quantity (
-                          {selectedItem.unit ||
-                            "units"}
-                          )
-                        </th>
-
-                        <th className="whitespace-nowrap p-3 text-center">
-                          Unit Rate
-                        </th>
-
-                        <th className="whitespace-nowrap p-3 text-center">
-                          Total Cost
-                        </th>
-
-                        {canEdit && (
-                          <th className="whitespace-nowrap p-3 text-center">
-                            Actions
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-gray-200">
-                      {loadingLogs ? (
-                        <tr>
-                          <td
-                            colSpan={
-                              canEdit ? 9 : 8
-                            }
-                            className="
-                              py-8
-                              text-center
-                              text-gray-500
-                            "
+                        return (
+                          <article
+                            key={log.id || index}
+                            className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
                           >
-                            Loading logs...
-                          </td>
-                        </tr>
-                      ) : logs.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={
-                              canEdit ? 9 : 8
-                            }
-                            className="
-                              py-8
-                              text-center
-                              text-gray-400
-                            "
-                          >
-                            No daily log records
-                            added yet.
-                          </td>
-                        </tr>
-                      ) : (
-                        logs.map(
-                          (log, index) => {
-                            const count =
-                              Number(
-                                log.count || 1
-                              );
-
-                            const cost =
-                              log.totalCost ??
-                              Number(
-                                log.qty || 0
-                              ) *
-                                Number(
-                                  log.unitRate ||
-                                    0
-                                ) *
-                                count;
-
-                            // Split the stored plate string into
-                            // individual plates for the 4-column
-                            // matrix display below.
-                            const plates = log.numberPlate
-                              ? log.numberPlate
-                                  .split(",")
-                                  .map((p) => p.trim())
-                                  .filter(Boolean)
-                              : [];
-
-                            return (
-                              <tr
-                                key={
-                                  log.id ||
-                                  index
-                                }
-                                className="align-top hover:bg-gray-50"
-                              >
-                                <td className="p-3 text-center font-medium text-gray-500">
-                                  {index + 1}
-                                </td>
-
-                                <td className="whitespace-nowrap p-3 text-gray-800">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-xs text-gray-500">
+                                  #{index + 1} ·{" "}
                                   {log.date
-                                    ? new Date(
-                                        log.date
-                                      )
+                                    ? new Date(log.date)
                                         .toISOString()
-                                        .split(
-                                          "T"
-                                        )[0]
+                                        .split("T")[0]
                                     : "—"}
-                                </td>
+                                </p>
 
-                                <td className="max-w-[180px] truncate p-3 font-medium text-gray-700">
-                                  {
-                                    selectedItem.item
+                                <p className="mt-0.5 truncate font-semibold text-gray-800">
+                                  {selectedItem.item}
+                                </p>
+                              </div>
+
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDeleteLogEntry(
+                                      log.id
+                                    )
                                   }
-                                </td>
+                                  className="
+                                    inline-flex
+                                    min-h-11 min-w-11
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-lg
+                                    text-red-500
+                                    hover:bg-red-50
+                                    hover:text-red-700
+                                  "
+                                  aria-label="Delete log entry"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
+                            </div>
 
-                                <td className="p-3 text-center font-semibold">
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                              <div className="rounded-lg bg-gray-50 p-2">
+                                <p className="text-[10px] text-gray-500">
+                                  Units
+                                </p>
+                                <p className="mt-0.5 text-sm font-semibold text-gray-800">
                                   {count}
-                                </td>
+                                </p>
+                              </div>
 
-                                {/* NUMBER PLATE MATRIX (2 per row, full text, capped height) */}
-                                <td className="min-w-[220px] p-3 align-top text-gray-700">
-                                  {plates.length > 0 ? (
-                                    <div
-                                      className="
-                                        grid grid-cols-2 gap-1.5
-                                        max-h-[92px]
-                                        overflow-y-auto
-                                        pr-1
-                                      "
-                                    >
-                                      {plates.map(
-                                        (plate, pIdx) => (
-                                          <span
-                                            key={pIdx}
-                                            className="
-                                              whitespace-nowrap
-                                              rounded-md
-                                              border
-                                              border-gray-200
-                                              bg-gray-100
-                                              px-2 py-1
-                                              text-center
-                                              text-[11px]
-                                              font-semibold
-                                              tracking-tight
-                                              text-gray-700
-                                            "
-                                          >
-                                            {plate}
-                                          </span>
-                                        )
-                                      )}
-                                    </div>
-                                  ) : (
-                                    "-"
-                                  )}
-
-                                  {plates.length > 4 && (
-                                    <p className="mt-1 text-[10px] text-gray-400">
-                                      {plates.length} plates — scroll to see all
-                                    </p>
-                                  )}
-                                </td>
-
-                                <td className="whitespace-nowrap p-3 text-center font-semibold">
+                              <div className="rounded-lg bg-gray-50 p-2">
+                                <p className="text-[10px] text-gray-500">
+                                  Quantity
+                                </p>
+                                <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">
                                   {log.qty}{" "}
                                   {selectedItem.unit ||
                                     ""}
-                                </td>
+                                </p>
+                              </div>
 
-                                <td className="whitespace-nowrap p-3 text-center text-gray-600">
-                                  ₹
-                                  {Number(
-                                    log.unitRate ||
-                                      0
-                                  ).toLocaleString()}
-                                </td>
-
-                                <td className="whitespace-nowrap p-3 text-center font-bold text-gray-900">
+                              <div className="rounded-lg bg-gray-50 p-2">
+                                <p className="text-[10px] text-gray-500">
+                                  Cost
+                                </p>
+                                <p className="mt-0.5 truncate text-sm font-bold text-gray-900">
                                   ₹
                                   {Number(
                                     cost || 0
                                   ).toLocaleString()}
-                                </td>
+                                </p>
+                              </div>
+                            </div>
 
-                                {canEdit && (
-                                  <td className="p-3 text-center">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleDeleteLogEntry(
-                                          log.id
-                                        )
+                            {plates.length > 0 && (
+                              <div className="mt-3 border-t border-gray-100 pt-3">
+                                <p className="mb-1.5 text-[11px] font-medium text-gray-500">
+                                  Number Plates (
+                                  {plates.length})
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  {plates.map(
+                                    (plate, pIdx) => (
+                                      <span
+                                        key={pIdx}
+                                        className="
+                                          whitespace-nowrap
+                                          rounded-md
+                                          border
+                                          border-gray-200
+                                          bg-gray-100
+                                          px-2 py-1
+                                          text-center
+                                          text-[11px]
+                                          font-semibold
+                                          tracking-tight
+                                          text-gray-700
+                                        "
+                                      >
+                                        {plate}
+                                      </span>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+
+                    {/* DESKTOP LOG TABLE */}
+                    <div
+                      className="
+                        hidden
+                        md:block
+                        w-full min-w-0
+                        overflow-hidden
+                        rounded-xl
+                        border border-gray-200
+                      "
+                    >
+                      <div
+                        className="
+                          gc-table-scroll
+                          overflow-x-auto
+                          pb-2
+                        "
+                      >
+                        <table
+                          className="
+                            w-full
+                            min-w-[1000px]
+                            border-collapse
+                            text-sm
+                          "
+                        >
+                          <thead
+                            className="
+                              sticky top-0 z-10
+                              bg-gray-100
+                            "
+                          >
+                            <tr
+                              className="
+                                border-b
+                                border-gray-200
+                              "
+                            >
+                              <th className="whitespace-nowrap p-3 text-center">
+                                Sr No
+                              </th>
+
+                              <th className="whitespace-nowrap p-3 text-left">
+                                Date
+                              </th>
+
+                              <th className="whitespace-nowrap p-3 text-left">
+                                Item
+                              </th>
+
+                              <th className="whitespace-nowrap p-3 text-center">
+                                No. of Units
+                              </th>
+
+                              <th className="whitespace-nowrap p-3 text-left min-w-[220px]">
+                                Number Plate
+                              </th>
+
+                              <th className="whitespace-nowrap p-3 text-center">
+                                Quantity (
+                                {selectedItem.unit ||
+                                  "units"}
+                                )
+                              </th>
+
+                              <th className="whitespace-nowrap p-3 text-center">
+                                Unit Rate
+                              </th>
+
+                              <th className="whitespace-nowrap p-3 text-center">
+                                Total Cost
+                              </th>
+
+                              {canEdit && (
+                                <th className="whitespace-nowrap p-3 text-center">
+                                  Actions
+                                </th>
+                              )}
+                            </tr>
+                          </thead>
+
+                          <tbody className="divide-y divide-gray-200">
+                            {logs.map(
+                              (log, index) => {
+                                const count =
+                                  Number(
+                                    log.count || 1
+                                  );
+
+                                const cost =
+                                  log.totalCost ??
+                                  Number(
+                                    log.qty || 0
+                                  ) *
+                                    Number(
+                                      log.unitRate ||
+                                        0
+                                    ) *
+                                    count;
+
+                                const plates = log.numberPlate
+                                  ? log.numberPlate
+                                      .split(",")
+                                      .map((p) => p.trim())
+                                      .filter(Boolean)
+                                  : [];
+
+                                return (
+                                  <tr
+                                    key={
+                                      log.id ||
+                                      index
+                                    }
+                                    className="align-top hover:bg-gray-50"
+                                  >
+                                    <td className="p-3 text-center font-medium text-gray-500">
+                                      {index + 1}
+                                    </td>
+
+                                    <td className="whitespace-nowrap p-3 text-gray-800">
+                                      {log.date
+                                        ? new Date(
+                                            log.date
+                                          )
+                                            .toISOString()
+                                            .split(
+                                              "T"
+                                            )[0]
+                                        : "—"}
+                                    </td>
+
+                                    <td className="max-w-[180px] truncate p-3 font-medium text-gray-700">
+                                      {
+                                        selectedItem.item
                                       }
-                                      className="
-                                        inline-flex
-                                        min-h-11
-                                        min-w-11
-                                        items-center
-                                        justify-center
-                                        rounded-lg
-                                        text-red-500
-                                        hover:bg-red-50
-                                        hover:text-red-700
-                                      "
-                                      aria-label="Delete log entry"
-                                      title="Delete log entry"
-                                    >
-                                      <Trash2
-                                        size={16}
-                                      />
-                                    </button>
-                                  </td>
-                                )}
-                              </tr>
-                            );
-                          }
-                        )
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                                    </td>
+
+                                    <td className="p-3 text-center font-semibold">
+                                      {count}
+                                    </td>
+
+                                    {/* NUMBER PLATE MATRIX (2 per row, full text, capped height) */}
+                                    <td className="min-w-[220px] p-3 align-top text-gray-700">
+                                      {plates.length > 0 ? (
+                                        <div
+                                          className="
+                                            grid grid-cols-2 gap-1.5
+                                            max-h-[92px]
+                                            overflow-y-auto
+                                            pr-1
+                                          "
+                                        >
+                                          {plates.map(
+                                            (plate, pIdx) => (
+                                              <span
+                                                key={pIdx}
+                                                className="
+                                                  whitespace-nowrap
+                                                  rounded-md
+                                                  border
+                                                  border-gray-200
+                                                  bg-gray-100
+                                                  px-2 py-1
+                                                  text-center
+                                                  text-[11px]
+                                                  font-semibold
+                                                  tracking-tight
+                                                  text-gray-700
+                                                "
+                                              >
+                                                {plate}
+                                              </span>
+                                            )
+                                          )}
+                                        </div>
+                                      ) : (
+                                        "-"
+                                      )}
+
+                                      {plates.length > 4 && (
+                                        <p className="mt-1 text-[10px] text-gray-400">
+                                          {plates.length} plates — scroll to see all
+                                        </p>
+                                      )}
+                                    </td>
+
+                                    <td className="whitespace-nowrap p-3 text-center font-semibold">
+                                      {log.qty}{" "}
+                                      {selectedItem.unit ||
+                                        ""}
+                                    </td>
+
+                                    <td className="whitespace-nowrap p-3 text-center text-gray-600">
+                                      ₹
+                                      {Number(
+                                        log.unitRate ||
+                                          0
+                                      ).toLocaleString()}
+                                    </td>
+
+                                    <td className="whitespace-nowrap p-3 text-center font-bold text-gray-900">
+                                      ₹
+                                      {Number(
+                                        cost || 0
+                                      ).toLocaleString()}
+                                    </td>
+
+                                    {canEdit && (
+                                      <td className="p-3 text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleDeleteLogEntry(
+                                              log.id
+                                            )
+                                          }
+                                          className="
+                                            inline-flex
+                                            min-h-11
+                                            min-w-11
+                                            items-center
+                                            justify-center
+                                            rounded-lg
+                                            text-red-500
+                                            hover:bg-red-50
+                                            hover:text-red-700
+                                          "
+                                          aria-label="Delete log entry"
+                                          title="Delete log entry"
+                                        >
+                                          <Trash2
+                                            size={16}
+                                          />
+                                        </button>
+                                      </td>
+                                    )}
+                                  </tr>
+                                );
+                              }
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* TOTALS */}
