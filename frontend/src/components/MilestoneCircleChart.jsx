@@ -249,15 +249,18 @@ export default function MilestoneCircleChart({
       ) : chartType === "circle" ? (
         /* =========================
            CIRCLE CHART
+           SMALLER SIZE ONLY
         ========================= */
 
         <div
           className="
-            h-[350px]
+            mx-auto
+            h-[280px]
             w-full
+            max-w-[500px]
             min-w-0
-            sm:h-[390px]
-            md:h-[420px]
+            sm:h-[320px]
+            md:h-[350px]
           "
         >
           <ResponsiveContainer
@@ -270,17 +273,17 @@ export default function MilestoneCircleChart({
                 isCompact ? "18%" : "15%"
               }
               outerRadius={
-                isCompact ? "68%" : "78%"
+                isCompact ? "58%" : "65%"
               }
               startAngle={90}
               endAngle={-270}
               cx={isCompact ? "50%" : "43%"}
               cy={isCompact ? "43%" : "50%"}
               margin={{
-                top: 10,
-                right: isCompact ? 5 : 20,
-                bottom: isCompact ? 55 : 10,
-                left: isCompact ? 5 : 10,
+                top: 5,
+                right: isCompact ? 5 : 10,
+                bottom: isCompact ? 45 : 5,
+                left: 5,
               }}
             >
               <PolarAngleAxis
@@ -353,6 +356,7 @@ export default function MilestoneCircleChart({
       ) : (
         /* =========================
            BAR CHART
+           UNCHANGED
         ========================= */
 
         <div
