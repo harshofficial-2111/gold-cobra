@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   ResponsiveContainer,
   RadialBarChart,
@@ -53,26 +53,7 @@ export default function MilestoneCircleChart({
 }) {
   const isCompact = useMediaQuery("(max-width: 767px)");
 
-  // Default to Bar View on mobile (more readable with many
-  // milestones), Circle View on larger screens. Once the user
-  // manually picks a view we respect their choice and stop
-  // auto-switching on resize.
-  const [chartType, setChartType] = useState(
-    isCompact ? "bar" : "circle"
-  );
-
-  const [userPicked, setUserPicked] = useState(false);
-
-  useEffect(() => {
-    if (!userPicked) {
-      setChartType(isCompact ? "bar" : "circle");
-    }
-  }, [isCompact, userPicked]);
-
-  function handleChartTypeChange(e) {
-    setUserPicked(true);
-    setChartType(e.target.value);
-  }
+  const [chartType, setChartType] = useState("circle");
 
   /* =========================
      CIRCLE DATA
@@ -214,7 +195,9 @@ export default function MilestoneCircleChart({
 
         <select
           value={chartType}
-          onChange={handleChartTypeChange}
+          onChange={(e) =>
+            setChartType(e.target.value)
+          }
           aria-label="Chart type"
           className="
             h-11
@@ -233,12 +216,12 @@ export default function MilestoneCircleChart({
             sm:px-3
           "
         >
-          <option value="bar">
-            Bar View
-          </option>
-
           <option value="circle">
             Circle View
+          </option>
+
+          <option value="bar">
+            Bar View
           </option>
         </select>
       </div>
