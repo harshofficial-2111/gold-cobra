@@ -249,18 +249,18 @@ export default function MilestoneCircleChart({
       ) : chartType === "circle" ? (
         /* =========================
            CIRCLE CHART
-           SMALLER SIZE ONLY
+           MEDIUM SIZE
         ========================= */
 
         <div
           className="
             mx-auto
-            h-[280px]
+            h-[320px]
             w-full
-            max-w-[500px]
+            max-w-[560px]
             min-w-0
-            sm:h-[320px]
-            md:h-[350px]
+            sm:h-[350px]
+            md:h-[380px]
           "
         >
           <ResponsiveContainer
@@ -273,7 +273,7 @@ export default function MilestoneCircleChart({
                 isCompact ? "18%" : "15%"
               }
               outerRadius={
-                isCompact ? "58%" : "65%"
+                isCompact ? "64%" : "72%"
               }
               startAngle={90}
               endAngle={-270}
