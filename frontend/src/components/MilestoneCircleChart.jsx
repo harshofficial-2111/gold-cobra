@@ -249,110 +249,133 @@ export default function MilestoneCircleChart({
       ) : chartType === "circle" ? (
         /* =========================
            CIRCLE CHART
-           MEDIUM SIZE
+           FIXED SIZING: cx/cy centered,
+           legend moved out of the SVG
+           margin on mobile so it no
+           longer eats into the radius.
         ========================= */
 
-        <div
-          className="
-            mx-auto
-            h-[320px]
-            w-full
-            max-w-[560px]
-            min-w-0
-            sm:h-[350px]
-            md:h-[380px]
-          "
-        >
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
+        <>
+          <div
+            className="
+              mx-auto
+              h-[320px]
+              w-full
+              max-w-[560px]
+              min-w-0
+              sm:h-[350px]
+              md:h-[380px]
+            "
           >
-            <RadialBarChart
-              data={circleData}
-              innerRadius={
-                isCompact ? "18%" : "15%"
-              }
-              outerRadius={
-                isCompact ? "64%" : "72%"
-              }
-              startAngle={90}
-              endAngle={-270}
-              cx={isCompact ? "50%" : "43%"}
-              cy={isCompact ? "43%" : "50%"}
-              margin={{
-                top: 5,
-                right: isCompact ? 5 : 10,
-                bottom: isCompact ? 45 : 5,
-                left: 5,
-              }}
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
             >
-              <PolarAngleAxis
-                type="number"
-                domain={[0, 100]}
-                angleAxisId={0}
-                tick={false}
-              />
-
-              <RadialBar
-                dataKey="value"
-                background
-                cornerRadius={4}
-                label={{
-                  fill: "#333",
-                  position: "insideStart",
-                  fontSize: isCompact ? 8 : 10,
-                  formatter: (value) =>
-                    `${Number(value).toFixed(0)}%`,
+              <RadialBarChart
+                data={circleData}
+                innerRadius={
+                  isCompact ? "20%" : "15%"
+                }
+                outerRadius={
+                  isCompact ? "90%" : "72%"
+                }
+                startAngle={90}
+                endAngle={-270}
+                cx="50%"
+                cy="50%"
+                margin={{
+                  top: 5,
+                  right: isCompact ? 5 : 10,
+                  bottom: 5,
+                  left: 5,
                 }}
               >
-                {circleData.map(
-                  (entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.fill}
-                    />
-                  )
+                <PolarAngleAxis
+                  type="number"
+                  domain={[0, 100]}
+                  angleAxisId={0}
+                  tick={false}
+                />
+
+                <RadialBar
+                  dataKey="value"
+                  background
+                  cornerRadius={4}
+                  label={{
+                    fill: "#333",
+                    position: "insideStart",
+                    fontSize: isCompact ? 8 : 10,
+                    formatter: (value) =>
+                      `${Number(value).toFixed(0)}%`,
+                  }}
+                >
+                  {circleData.map(
+                    (entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.fill}
+                      />
+                    )
+                  )}
+                </RadialBar>
+
+                {!isCompact && (
+                  <Legend
+                    iconSize={9}
+                    layout="vertical"
+                    verticalAlign="middle"
+                    align="right"
+                    wrapperStyle={{
+                      fontSize: 12,
+                      lineHeight: "20px",
+                      maxWidth: "150px",
+                      overflow: "hidden",
+                    }}
+                  />
                 )}
-              </RadialBar>
 
-              <Legend
-                iconSize={9}
-                layout={
-                  isCompact
-                    ? "horizontal"
-                    : "vertical"
-                }
-                verticalAlign={
-                  isCompact
-                    ? "bottom"
-                    : "middle"
-                }
-                align={
-                  isCompact
-                    ? "center"
-                    : "right"
-                }
-                wrapperStyle={{
-                  fontSize: isCompact ? 10 : 12,
-                  lineHeight: isCompact
-                    ? "18px"
-                    : "20px",
-                  maxWidth: isCompact
-                    ? "100%"
-                    : "150px",
-                  overflow: "hidden",
-                }}
-              />
+                <Tooltip
+                  formatter={(value) => [
+                    `${Number(value).toFixed(2)}%`,
+                    "Completed",
+                  ]}
+                />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
 
-              <Tooltip
-                formatter={(value) => [
-                  `${Number(value).toFixed(2)}%`,
-                  "Completed",
-                ]}
-              />
-            </RadialBarChart>
-          </ResponsiveContainer>
-        </div>
+          {/* Mobile legend: rendered below the chart in normal
+              document flow instead of inside the SVG margin, so
+              it no longer shrinks the available radius. */}
+          {isCompact && (
+            <div
+              className="
+                mt-3
+                flex
+                flex-wrap
+                justify-center
+                gap-x-4
+                gap-y-1.5
+                px-2
+                text-[10px]
+                text-gray-600
+              "
+            >
+              {circleData.map((entry, index) => (
+                <div
+                  key={`legend-${index}`}
+                  className="flex items-center gap-1"
+                >
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: entry.fill }}
+                  />
+                  {entry.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         /* =========================
            BAR CHART
