@@ -43,6 +43,17 @@ export default function CrudModal({
     };
   }, [onClose, saving]);
 
+  // Lock background scroll while the sheet is open, so mobile
+  // browsers don't scroll the page underneath it.
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
   async function submit(e) {
     e.preventDefault();
     setError("");
@@ -107,6 +118,7 @@ export default function CrudModal({
         className="
           flex w-full min-w-0 max-w-md flex-col
           overflow-hidden rounded-t-2xl bg-white shadow-xl
+          max-h-[92dvh]
           sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl
         "
         onMouseDown={(e) => e.stopPropagation()}
@@ -140,95 +152,107 @@ export default function CrudModal({
           </button>
         </header>
 
-        {/* Form */}
+        {/* Form: scrollable fields + sticky footer, so the
+            Save/Cancel buttons stay reachable on mobile without
+            scrolling past a long field list. */}
         <form
           onSubmit={submit}
-          className="
-            min-h-0 overflow-y-auto
-            px-4 py-4
-            sm:px-5 sm:py-5
-          "
+          className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="space-y-4">
-            {fields.map((f) => (
-              <label
-                className="block text-sm font-medium text-gray-700"
-                key={f.name}
-              >
-                <span>
-                  {f.label}
-                  {f.required && (
-                    <span className="text-red-500"> *</span>
+          <div
+            className="
+              min-h-0 flex-1 overflow-y-auto
+              px-4 py-4
+              sm:px-5 sm:py-5
+            "
+          >
+            <div className="space-y-4">
+              {fields.map((f) => (
+                <label
+                  className="block text-sm font-medium text-gray-700"
+                  key={f.name}
+                >
+                  <span>
+                    {f.label}
+                    {f.required && (
+                      <span className="text-red-500"> *</span>
+                    )}
+                  </span>
+
+                  {f.type === "select" ? (
+                    <select
+                      value={values[f.name]}
+                      onChange={(e) =>
+                        updateValue(f.name, e.target.value)
+                      }
+                      disabled={saving}
+                      className="
+                        mt-1.5 block min-h-11 w-full min-w-0
+                        rounded-lg border border-gray-300 bg-white
+                        px-3 text-base text-gray-800
+                        outline-none transition
+                        focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+                        disabled:bg-gray-100 disabled:text-gray-500
+                      "
+                    >
+                      <option value="">Select…</option>
+
+                      {f.options?.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={f.type || "text"}
+                      inputMode={
+                        f.type === "number" ? "decimal" : undefined
+                      }
+                      step={f.type === "number" ? "any" : undefined}
+                      value={values[f.name]}
+                      onChange={(e) =>
+                        updateValue(f.name, e.target.value)
+                      }
+                      disabled={saving}
+                      className="
+                        mt-1.5 block min-h-11 w-full min-w-0
+                        rounded-lg border border-gray-300 bg-white
+                        px-3 text-base text-gray-800
+                        outline-none transition
+                        focus:border-blue-500 focus:ring-2 focus:ring-blue-100
+                        disabled:bg-gray-100 disabled:text-gray-500
+                      "
+                    />
                   )}
-                </span>
+                </label>
+              ))}
+            </div>
 
-                {f.type === "select" ? (
-                  <select
-                    value={values[f.name]}
-                    onChange={(e) =>
-                      updateValue(f.name, e.target.value)
-                    }
-                    disabled={saving}
-                    className="
-                      mt-1.5 block min-h-11 w-full min-w-0
-                      rounded-lg border border-gray-300 bg-white
-                      px-3 text-base text-gray-800
-                      outline-none transition
-                      focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                      disabled:bg-gray-100 disabled:text-gray-500
-                    "
-                  >
-                    <option value="">Select…</option>
-
-                    {f.options?.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={f.type || "text"}
-                    inputMode={f.type === "number" ? "decimal" : undefined}
-                    step={f.type === "number" ? "any" : undefined}
-                    value={values[f.name]}
-                    onChange={(e) =>
-                      updateValue(f.name, e.target.value)
-                    }
-                    disabled={saving}
-                    className="
-                      mt-1.5 block min-h-11 w-full min-w-0
-                      rounded-lg border border-gray-300 bg-white
-                      px-3 text-base text-gray-800
-                      outline-none transition
-                      focus:border-blue-500 focus:ring-2 focus:ring-blue-100
-                      disabled:bg-gray-100 disabled:text-gray-500
-                    "
-                  />
-                )}
-              </label>
-            ))}
+            {/* Error */}
+            {error && (
+              <p
+                role="alert"
+                className="
+                  mt-4 rounded-lg bg-red-50
+                  px-3 py-2.5 text-sm leading-5 text-red-600
+                "
+              >
+                {error}
+              </p>
+            )}
           </div>
 
-          {/* Error */}
-          {error && (
-            <p
-              role="alert"
-              className="
-                mt-4 rounded-lg bg-red-50
-                px-3 py-2.5 text-sm leading-5 text-red-600
-              "
-            >
-              {error}
-            </p>
-          )}
-
-          {/* Footer */}
+          {/* Sticky footer — always visible, no scrolling needed
+              to find Save/Cancel. Safe-area padding keeps it clear
+              of the home indicator on iOS. */}
           <footer
             className="
-              mt-5 flex flex-col-reverse gap-2
-              border-t border-gray-100 pt-4
-              sm:flex-row sm:justify-end
+              flex shrink-0 flex-col-reverse gap-2
+              border-t border-gray-200 bg-white
+              px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3
+              sm:flex-row sm:justify-end sm:px-5
+              sm:pb-4
             "
           >
             <button
