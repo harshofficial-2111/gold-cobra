@@ -344,33 +344,34 @@ export default function MilestoneCircleChart({
             </ResponsiveContainer>
           </div>
 
-          {/* Mobile legend: rendered below the chart in normal
-              document flow instead of inside the SVG margin, so
-              it no longer shrinks the available radius. */}
+          {/* Mobile legend: 3-column grid with square swatches,
+              matching the reference layout — columns stay
+              aligned instead of wrapping unevenly. */}
           {isCompact && (
             <div
               className="
                 mt-3
-                flex
-                flex-wrap
-                justify-center
-                gap-x-4
-                gap-y-1.5
+                grid
+                grid-cols-3
+                gap-x-3
+                gap-y-2
                 px-2
-                text-[10px]
-                text-gray-600
+                text-[11px]
+                text-gray-700
               "
             >
               {circleData.map((entry, index) => (
                 <div
                   key={`legend-${index}`}
-                  className="flex items-center gap-1"
+                  className="flex min-w-0 items-center gap-1.5"
                 >
                   <span
-                    className="h-2 w-2 shrink-0 rounded-full"
+                    className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                     style={{ backgroundColor: entry.fill }}
                   />
-                  {entry.name}
+                  <span className="truncate">
+                    {entry.name}
+                  </span>
                 </div>
               ))}
             </div>
